@@ -1,0 +1,5 @@
+# Критические файлы — строго LF (см. AGENTS.md §1: CP1251-байт/переводы строк роняют qte)
+registry/functions.csv eol=lf
+
+# Shell-скрипты — всегда LF
+*.sh eol=lf
