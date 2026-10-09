@@ -1,5 +1,17 @@
 # QTE56 — новая архитектура (arch_new)
 
+> **QTE56 — развитие проекта [QtE5](https://github.com/MGWL/QtE5)**: биндинги Qt для языка D через C++ DLL-обёртки — GUI на D без перекомпиляции C++.
+
+## Возможности QTE56
+
+- **Полный доступ к Qt из D**: ~3800 функций, 116 gen-модулей, 6 merged DLL (widgets, foundation, views, text, dialogs, mainwin) + 26 standalone (qprocess, network, sql, qscintilla, qxlsx, multimedia и др.)
+- **Qt 5.13.2 (32-бит, основная платформа) и Qt 6 (64-бит, частично)**, Windows и Linux
+- **Генератор кода v2** (`generator/`): создание привязок по Qt-заголовкам, реестр индексов `registry/functions.csv` — единый источник истины
+- **События и коллбэки**: ESlot, сигналы/слоты, события виджетов (onPaint, onKeyPress, onClose...), virtual-коллбэки через trampoline
+- **Строки и память**: конвертация D ↔ QString, ownership (auto-disown/wrap/tracked-объекты), value-типы
+- **Дополнительные подсистемы**: OLE/COM (Excel, Access через DAO/ADOX), файловый Excel (.xlsx/.xlsm через QXlsx), Wren-скриптинг, Forth-интерпретатор, Turbo Vision (TUI), сеть (QNetwork + libcurl), базы данных (QSql, ODBC), сканирование WSD/SOAP
+- **Утилита `qte`** (`tools/qte/`): классы, индексы, проверки, трейсинг вызовов, зависимости
+
 ## 🤖 Для AI моделей: с чего начать?
 
 **Читай первым:** [`AI_LOADING_ORDER.md`](AI_LOADING_ORDER.md) — порядок загрузки документации для эффективного создания QTE56 приложений.
