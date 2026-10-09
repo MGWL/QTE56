@@ -1,4 +1,4 @@
-# QTE56 — новая архитектура (arch_new)
+# QTE56 - this is D (Dlang) Bindings for Qt 5 and Qt 6
 
 > **QTE56 — развитие проекта [QtE5](https://github.com/MGWL/QtE5)**: биндинги Qt для языка D через C++ DLL-обёртки — GUI на D без перекомпиляции C++.
 
