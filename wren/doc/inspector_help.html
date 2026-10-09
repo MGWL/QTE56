@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wren Inspector — Справочник</title>
+<style>
+  :root {
+    --bg:       #1e1e2e;
+    --bg2:      #252535;
+    --bg3:      #2a2a3e;
+    --border:   #3a3a5a;
+    --text:     #cdd6f4;
+    --muted:    #7f849c;
+    --accent:   #89b4fa;
+    --green:    #a6e3a1;
+    --yellow:   #f9e2af;
+    --red:      #f38ba8;
+    --cyan:     #89dceb;
+    --purple:   #cba6f7;
+    --orange:   #fab387;
+    --pink:     #f5c2e7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  /* Layout */
+  #sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 260px; height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px 0;
+    z-index: 100;
+  }
+  #content {
+    margin-left: 260px;
+    padding: 32px 48px;
+    max-width: 1100px;
+  }
+  /* Sidebar */
+  #sidebar h2 {
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted);
+    padding: 8px 20px 4px;
+    margin-top: 12px;
+  }
+  #sidebar a {
+    display: block; padding: 5px 20px;
+    color: var(--text); text-decoration: none;
+    font-size: 13px; border-left: 2px solid transparent;
+    transition: all .15s;
+  }
+  #sidebar a:hover, #sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--bg3);
+  }
+  #sidebar .sub { padding-left: 36px; color: var(--muted); font-size: 12px; }
+  /* Typography */
+  h1 { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+  h2 { font-size: 20px; color: var(--accent); margin: 36px 0 12px;
+       padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 15px; color: var(--yellow); margin: 24px 0 8px; }
+  h4 { font-size: 13px; color: var(--cyan); margin: 16px 0 6px; }
+  p  { margin: 8px 0; color: var(--text); }
+  .subtitle { color: var(--muted); font-size: 15px; margin-bottom: 24px; }
+  /* Code */
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    background: var(--bg3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--orange);
+  }
+  pre {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 10px 0 16px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  /* Syntax colors */
+  .kw  { color: var(--purple); }
+  .cm  { color: var(--muted); font-style: italic; }
+  .str { color: var(--green); }
+  .num { color: var(--orange); }
+  .fn  { color: var(--accent); }
+  .cls { color: var(--yellow); }
+  .op  { color: var(--cyan); }
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 12px 0 20px; font-size: 13px;
+  }
+  th {
+    background: var(--bg3); color: var(--accent);
+    padding: 8px 12px; text-align: left;
+    border: 1px solid var(--border);
+    font-weight: 600; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  td {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--bg2); }
+  td code { background: transparent; padding: 0; }
+  td.sig  { color: var(--accent); font-family: monospace; white-space: nowrap; }
+  td.ret  { color: var(--orange); font-family: monospace; }
+  td.desc { color: var(--text); }
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 1px 7px;
+    border-radius: 10px; font-size: 11px; font-weight: 600;
+    margin-right: 4px; vertical-align: middle;
+  }
+  .b-static  { background: #313244; color: var(--purple); }
+  .b-getter  { background: #313244; color: var(--cyan); }
+  .b-method  { background: #313244; color: var(--green); }
+  .b-note    { background: #45475a; color: var(--yellow); }
+  /* Callouts */
+  .note {
+    background: #2a2d3e; border-left: 3px solid var(--accent);
+    padding: 10px 14px; border-radius: 0 4px 4px 0;
+    margin: 12px 0; font-size: 13px;
+  }
+  .warn {
+    background: #2e2b1e; border-left: 3px solid var(--yellow);
+    padding: 10px 14px; border-radius: 0 4px 4px 0;
+    margin: 12px 0; font-size: 13px;
+  }
+  .tip {
+    background: #1e2e1e; border-left: 3px solid var(--green);
+    padding: 10px 14px; border-radius: 0 4px 4px 0;
+    margin: 12px 0; font-size: 13px;
+  }
+  /* Keyboard */
+  kbd {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 6px;
+    font-family: monospace; font-size: 12px;
+    color: var(--cyan);
+  }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  section { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ SIDEBAR -->
+<nav id="sidebar">
+  <div style="padding:16px 20px 8px; font-weight:700; color:var(--accent); font-size:15px;">
+    🔍 Wren Inspector
+  </div>
+  <div style="padding:0 20px 12px; color:var(--muted); font-size:11px;">Справочник API</div>
+
+  <h2>Начало работы</h2>
+  <a href="#overview">Обзор</a>
+  <a href="#quickstart">Быстрый старт</a>
+  <a href="#keyboard">Горячие клавиши</a>
+  <a href="#context">Контекст выполнения</a>
+
+  <h2>Классы Wren</h2>
+  <a href="#inspector">Inspector</a>
+  <a class="sub" href="#inspector-find">Поиск виджетов</a>
+  <a class="sub" href="#inspector-memory">Чтение памяти</a>
+  <a class="sub" href="#inspector-named">Named pointers</a>
+  <a href="#qtobj">QtObj</a>
+  <a class="sub" href="#qtobj-props">Свойства</a>
+  <a class="sub" href="#qtobj-tree">Дерево</a>
+  <a class="sub" href="#qtobj-dump">Дамп / память</a>
+  <a href="#log">Log</a>
+  <a href="#out">Out</a>
+  <a href="#check">Check</a>
+
+  <h2>Интеграция с D</h2>
+  <a href="#d-register">registerPointer</a>
+  <a href="#d-interpret">interpret из D</a>
+  <a href="#d-logfrom">Log из D</a>
+
+  <h2>Примеры</h2>
+  <a href="#ex-list">Связанный список</a>
+  <a href="#ex-struct">Структура в памяти</a>
+  <a href="#ex-chain">Цепочка указателей</a>
+  <a href="#ex-hex">Hex dump</a>
+  <a href="#ex-find">Поиск и инспекция</a>
+  <a href="#ex-check">Тесты (Check)</a>
+
+  <h2>Сценарии</h2>
+  <a href="#scenarios">Файлы .wren</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ CONTENT -->
+<div id="content">
+
+<!-- ─────────────────────────────── HEADER -->
+<section id="overview">
+  <h1>Wren Inspector</h1>
+  <p class="subtitle">Встроенный отладчик и REPL для Qt/D приложений</p>
+
+  <p>Wren Inspector — окно, встроенное в ваше приложение, которое позволяет в режиме реального
+  времени исследовать Qt-виджеты, читать произвольную память, запускать Wren-скрипты
+  и просматривать логи из D-кода — без остановки приложения.</p>
+
+  <table>
+    <tr><th>Панель</th><th>Назначение</th><th>Методы записи</th></tr>
+    <tr>
+      <td><strong>Monitor</strong> (левая)</td>
+      <td>Лог из D-кода. Пассивный поток. Кнопка Clear.</td>
+      <td><code>Log.print / info / ok / warn / error / val / sep</code></td>
+    </tr>
+    <tr>
+      <td><strong>Console</strong> (правая)</td>
+      <td>Вывод REPL и сценариев. Активный поток.</td>
+      <td><code>Out.print / info / ok / warn / error / val / sep</code></td>
+    </tr>
+    <tr>
+      <td><strong>Input</strong> (нижняя)</td>
+      <td>Многострочный редактор Wren-кода.</td>
+      <td>Ctrl+Enter = Run, Ctrl+↑↓ = история</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ─────────────────────────────── QUICKSTART -->
+<section id="quickstart">
+  <h2>Быстрый старт</h2>
+
+  <h3>Подключение в D-программе</h3>
+  <pre><span class="kw">import</span> wren_vm;
+<span class="kw">import</span> wren_console;
+
+<span class="cm">// В main():</span>
+<span class="fn">LoadWren</span>(<span class="str">"./dll/wren_bridge.dll"</span>);
+<span class="fn">LoadQt</span>(<span class="str">"./dll"</span>);
+<span class="kw">auto</span> app = <span class="kw">new</span> <span class="cls">QApplication</span>(<span class="str">"myapp"</span>);
+
+<span class="kw">auto</span> vm  = <span class="kw">new</span> <span class="cls">WrenVM</span>(&amp;wWrite, &amp;wError);
+<span class="kw">auto</span> ins = <span class="fn">createInspector</span>(vm, <span class="kw">cast</span>(<span class="kw">void*</span>)<span class="kw">null</span>, <span class="str">"./wren/scenarios"</span>);
+ins.<span class="fn">show</span>();
+
+<span class="cm">// Зарегистрировать переменные для просмотра из Wren:</span>
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"myVar"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;myVar);
+
+app.<span class="fn">exec</span>();</pre>
+
+  <h3>Первые команды в REPL</h3>
+  <pre><span class="cm">// Показать все виджеты:</span>
+<span class="cls">Inspector</span>.<span class="fn">allWidgets</span>.<span class="fn">each</span> {|w| <span class="cls">Out</span>.<span class="fn">print</span>(w) }
+
+<span class="cm">// Найти виджет по имени:</span>
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"myButton"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(w.className)    <span class="cm">// QPushButton</span>
+
+<span class="cm">// Дамп свойств:</span>
+w.<span class="fn">dump</span>
+
+<span class="cm">// Прочитать байт по адресу переменной:</span>
+<span class="kw">var</span> a = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"myVar"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="cls">Inspector</span>.<span class="fn">readI32</span>(a))</pre>
+</section>
+
+<!-- ─────────────────────────────── KEYBOARD -->
+<section id="keyboard">
+  <h2>Горячие клавиши</h2>
+  <table>
+    <tr><th>Комбинация</th><th>Действие</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Выполнить код в поле ввода (Run)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>↑</kbd></td><td>Предыдущая команда из истории</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>↓</kbd></td><td>Следующая команда / вернуться к текущему черновику</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>Новая строка в редакторе (обычный перенос)</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>Вставить отступ (4 пробела, стандартное поведение Qt)</td></tr>
+  </table>
+
+  <div class="note">История автоматически сохраняет до последних 1000 команд. Consecutive дубликаты не сохраняются.</div>
+</section>
+
+<!-- ─────────────────────────────── CONTEXT -->
+<section id="context">
+  <h2>Контекст выполнения</h2>
+  <p>Каждое нажатие <strong>Run</strong> создаёт <em>новый изолированный модуль</em>
+  (<code>console_1</code>, <code>console_2</code>, …). Переменные, объявленные в одном запуске,
+  <strong>не видны</strong> в следующем.</p>
+
+  <div class="warn">⚠ <code>var x = 5</code> в одном запуске — потеряно после нажатия Run снова.</div>
+
+  <p>Для сохранения состояния между запусками используйте:</p>
+  <table>
+    <tr><th>Способ</th><th>Пример</th></tr>
+    <tr>
+      <td>Named pointers (C++ map)</td>
+      <td><code>Inspector.namedPtr("x") → Inspector.readI32(addr)</code></td>
+    </tr>
+    <tr>
+      <td>Qt-свойства виджета</td>
+      <td><code>w.setProperty("myKey","42") → w.property("myKey")</code></td>
+    </tr>
+    <tr>
+      <td>Сценарии (.wren файлы)</td>
+      <td>Загружаются через кнопку Load, весь файл в одном модуле</td>
+    </tr>
+  </table>
+
+  <h3>PREAMBLE — автоматические импорты</h3>
+  <p>В каждый запуск REPL автоматически добавляется:</p>
+  <pre><span class="kw">import</span> <span class="str">"log"</span>       <span class="kw">for</span> <span class="cls">Log</span>
+<span class="kw">import</span> <span class="str">"out"</span>       <span class="kw">for</span> <span class="cls">Out</span>
+<span class="kw">import</span> <span class="str">"check"</span>     <span class="kw">for</span> <span class="cls">Check</span>
+<span class="kw">import</span> <span class="str">"inspector"</span> <span class="kw">for</span> <span class="cls">Inspector</span>, <span class="cls">QtObj</span></pre>
+  <p>Не нужно писать import вручную в REPL. В сценариях — нужно.</p>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── INSPECTOR -->
+<section id="inspector">
+  <h2>Класс Inspector</h2>
+  <p>Все методы статические. Содержит поиск виджетов, чтение памяти и реестр именованных указателей.</p>
+
+  <!-- найти -->
+  <section id="inspector-find">
+  <h3>Поиск виджетов</h3>
+  <table>
+    <tr><th>Сигнатура</th><th>Возврат</th><th>Описание</th></tr>
+    <tr>
+      <td class="sig">Inspector.find(name)</td>
+      <td class="ret">QtObj</td>
+      <td class="desc">Найти виджет по <code>objectName</code>. Если не найден — <code>isNull == true</code>.</td>
+    </tr>
+    <tr>
+      <td class="sig">Inspector.allWidgets</td>
+      <td class="ret">List[QtObj]</td>
+      <td class="desc">Все виджеты приложения (<code>QApplication::allWidgets()</code>).</td>
+    </tr>
+    <tr>
+      <td class="sig">Inspector.topWidgets</td>
+      <td class="ret">List[QtObj]</td>
+      <td class="desc">Виджеты верхнего уровня (<code>topLevelWidgets()</code>).</td>
+    </tr>
+    <tr>
+      <td class="sig">Inspector.findByClass(cls)</td>
+      <td class="ret">List[QtObj]</td>
+      <td class="desc">Все виджеты указанного класса. <code>cls</code> — строка, напр. <code>"QPushButton"</code>.</td>
+    </tr>
+    <tr>
+      <td class="sig">Inspector.atAddress(n)</td>
+      <td class="ret">QtObj</td>
+      <td class="desc">Создать QtObj из числового адреса. Не проверяет валидность.</td>
+    </tr>
+  </table>
+
+  <pre><span class="cm">// Найти все кнопки и показать их тексты</span>
+<span class="kw">var</span> btns = <span class="cls">Inspector</span>.<span class="fn">findByClass</span>(<span class="str">"QPushButton"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"Buttons: %(btns.count)"</span>)
+btns.<span class="fn">each</span> {|b|
+    <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"  %(b.name)  text=%(b.property("text"))"</span>)
+}
+
+<span class="cm">// Round-trip через адрес</span>
+<span class="kw">var</span> w  = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"mainWindow"</span>)
+<span class="kw">var</span> w2 = <span class="cls">Inspector</span>.<span class="fn">atAddress</span>(w.address)
+<span class="cls">Out</span>.<span class="fn">print</span>(w2.name)   <span class="cm">// mainWindow</span></pre>
+  </section>
+
+  <!-- память -->
+  <section id="inspector-memory">
+  <h3>Чтение памяти</h3>
+  <div class="note">Все адреса — числа (<code>Num</code>). Адрес <code>0</code> возвращает <code>0</code> без краша.</div>
+  <table>
+    <tr><th>Сигнатура</th><th>Тип C++</th><th>Размер</th><th>Диапазон</th></tr>
+    <tr><td class="sig">Inspector.readU8(addr)</td>  <td><code>uint8_t</code></td>  <td>1 байт</td><td>0…255</td></tr>
+    <tr><td class="sig">Inspector.readU16(addr)</td> <td><code>uint16_t</code></td> <td>2 байта</td><td>0…65535</td></tr>
+    <tr><td class="sig">Inspector.readU32(addr)</td> <td><code>uint32_t</code></td> <td>4 байта</td><td>0…4 294 967 295</td></tr>
+    <tr><td class="sig">Inspector.readU64(addr)</td> <td><code>uint64_t</code></td> <td>8 байт</td><td>до 2⁵³ точно*</td></tr>
+    <tr><td class="sig">Inspector.readI8(addr)</td>  <td><code>int8_t</code></td>   <td>1 байт</td><td>−128…127</td></tr>
+    <tr><td class="sig">Inspector.readI16(addr)</td> <td><code>int16_t</code></td>  <td>2 байта</td><td>−32768…32767</td></tr>
+    <tr><td class="sig">Inspector.readI32(addr)</td> <td><code>int32_t</code></td>  <td>4 байта</td><td>±2 147 483 647</td></tr>
+    <tr><td class="sig">Inspector.readI64(addr)</td> <td><code>int64_t</code></td>  <td>8 байт</td><td>до 2⁵³ точно*</td></tr>
+    <tr><td class="sig">Inspector.readF32(addr)</td> <td><code>float</code></td>    <td>4 байта</td><td>IEEE 754 float</td></tr>
+    <tr><td class="sig">Inspector.readF64(addr)</td> <td><code>double</code></td>   <td>8 байт</td><td>IEEE 754 double</td></tr>
+    <tr><td class="sig">Inspector.readPtr(addr)</td> <td><code>uintptr_t</code></td><td>4/8 байт</td><td>адрес (uintptr)</td></tr>
+    <tr><td class="sig">Inspector.deref(addr)</td>   <td>—</td><td>—</td><td>readPtr → QtObj</td></tr>
+    <tr><td class="sig">Inspector.hexDump(addr, n)</td><td>—</td><td>n байт</td><td>вывод в Console</td></tr>
+    <tr><td class="sig">Inspector.hexDump(addr)</td> <td>—</td><td>128 байт</td><td>вывод в Console</td></tr>
+  </table>
+  <p>* Wren хранит числа как <code>double</code> (53-бит мантисса). int64 > 2⁵³ теряет точность.</p>
+
+  <pre><span class="cm">// Прочитать 4 байта по адресу переменной</span>
+<span class="kw">var</span> a = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"myInt"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="cls">Inspector</span>.<span class="fn">readI32</span>(a))
+
+<span class="cm">// Прочитать float</span>
+<span class="kw">var</span> af = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"myFloat"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="cls">Inspector</span>.<span class="fn">readF32</span>(af))
+
+<span class="cm">// Hex dump 32 байт по адресу</span>
+<span class="kw">var</span> addr = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"mainWin"</span>).address
+<span class="cls">Inspector</span>.<span class="fn">hexDump</span>(addr, <span class="num">32</span>)
+
+<span class="cm">// vtable pointer объекта</span>
+<span class="kw">var</span> vtbl = <span class="cls">Inspector</span>.<span class="fn">readPtr</span>(addr)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"vtable @ 0x%(vtbl)"</span>)</pre>
+  </section>
+
+  <!-- named pointers -->
+  <section id="inspector-named">
+  <h3>Именованные указатели (Named Pointers)</h3>
+  <p>Регистрируйте из D любые переменные/структуры, чтобы получить к ним доступ из Wren по имени.</p>
+  <table>
+    <tr><th>Сигнатура</th><th>Описание</th></tr>
+    <tr><td class="sig">Inspector.namedPtr(name)</td><td class="desc">Адрес (Num) зарегистрированного указателя. 0 если не найден.</td></tr>
+    <tr><td class="sig">Inspector.namedQtObj(name)</td><td class="desc">QtObj по имени (если указатель — это QObject*).</td></tr>
+    <tr><td class="sig">Inspector.pointerNames</td><td class="desc">List[String] — все зарегистрированные имена.</td></tr>
+  </table>
+
+  <h4>Регистрация из D:</h4>
+  <pre><span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"myStruct"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;myStruct);
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"counter"</span>,  <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;counter);
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"mainWin"</span>,  mainWin.<span class="fn">getWH</span>());   <span class="cm">// QWidget*</span>
+
+<span class="cls">WrenVM</span>.<span class="fn">unregisterPointer</span>(<span class="str">"counter"</span>);
+<span class="cls">WrenVM</span>.<span class="fn">clearPointers</span>();  <span class="cm">// удалить все</span></pre>
+
+  <h4>Использование из Wren:</h4>
+  <pre><span class="cm">// Список зарегистрированных имён</span>
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="cls">Inspector</span>.pointerNames)
+
+<span class="cm">// Прочитать int по имени</span>
+<span class="kw">var</span> a = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"counter"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="cls">Inspector</span>.<span class="fn">readI32</span>(a))
+
+<span class="cm">// Получить Qt-виджет по имени</span>
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">namedQtObj</span>(<span class="str">"mainWin"</span>)
+w.<span class="fn">dump</span></pre>
+  </section>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── QTOBJ -->
+<section id="qtobj">
+  <h2>Класс QtObj</h2>
+  <p>Обёртка над <code>QObject*</code>. Создаётся через <code>Inspector.find()</code>, <code>Inspector.atAddress()</code> и т.п.</p>
+  <div class="warn">⚠ QtObj не проверяет валидность указателя. Если объект удалён Qt — обращение к нему вызовет краш.</div>
+
+  <section id="qtobj-props">
+  <h3>Базовые свойства</h3>
+  <table>
+    <tr><th>Метод / Геттер</th><th>Тип</th><th>Описание</th></tr>
+    <tr><td class="sig">w.name</td>      <td class="ret">String</td><td class="desc"><code>objectName()</code></td></tr>
+    <tr><td class="sig">w.className</td> <td class="ret">String</td><td class="desc">Имя C++ класса: <code>"QPushButton"</code>, <code>"QLabel"</code>, …</td></tr>
+    <tr><td class="sig">w.address</td>   <td class="ret">Num</td>   <td class="desc">Числовой адрес объекта (uintptr_t).</td></tr>
+    <tr><td class="sig">w.isNull</td>    <td class="ret">Bool</td>  <td class="desc"><code>true</code> если указатель == null.</td></tr>
+    <tr><td class="sig">w.toString</td>  <td class="ret">String</td><td class="desc"><code>"ClassName(objectName)"</code></td></tr>
+    <tr><td class="sig">w.property(key)</td><td class="ret">String</td><td class="desc">Значение Qt-свойства. Ключ — строка (<code>"visible"</code>, <code>"text"</code>, …).</td></tr>
+    <tr><td class="sig">w.setProperty(key, val)</td><td class="ret">Bool</td><td class="desc">Установить Qt-свойство. val — строка.</td></tr>
+    <tr><td class="sig">w.invoke(method)</td><td class="ret">Bool</td><td class="desc">Вызвать слот без аргументов (<code>"show"</code>, <code>"hide"</code>, <code>"update"</code>).</td></tr>
+    <tr><td class="sig">w.propertyNames</td><td class="ret">List[String]</td><td class="desc">Список имён всех Qt meta-свойств.</td></tr>
+    <tr><td class="sig">w.methods</td>   <td class="ret">List[String]</td><td class="desc">Все мета-методы (сигналы + слоты + методы).</td></tr>
+    <tr><td class="sig">w.signals</td>   <td class="ret">List[String]</td><td class="desc">Только сигналы.</td></tr>
+    <tr><td class="sig">w.slots</td>     <td class="ret">List[String]</td><td class="desc">Только слоты.</td></tr>
+    <tr><td class="sig">w.dump</td>      <td class="ret">void</td>  <td class="desc">Вывести все свойства + parent + children в Console.</td></tr>
+  </table>
+
+  <pre><span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"saveBtn"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(w.className)           <span class="cm">// QPushButton</span>
+<span class="cls">Out</span>.<span class="fn">print</span>(w.<span class="fn">property</span>(<span class="str">"text"</span>))   <span class="cm">// Save</span>
+<span class="cls">Out</span>.<span class="fn">print</span>(w.<span class="fn">property</span>(<span class="str">"enabled"</span>)) <span class="cm">// true</span>
+w.<span class="fn">setProperty</span>(<span class="str">"text"</span>, <span class="str">"Saved!"</span>)  <span class="cm">// изменить текст</span>
+w.<span class="fn">invoke</span>(<span class="str">"hide"</span>)                 <span class="cm">// скрыть</span>
+
+<span class="cm">// Вывести все сигналы кнопки</span>
+w.signals.<span class="fn">each</span> {|s| <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"  signal: %(s)"</span>) }</pre>
+  </section>
+
+  <section id="qtobj-tree">
+  <h3>Дерево объектов</h3>
+  <table>
+    <tr><th>Метод</th><th>Тип</th><th>Описание</th></tr>
+    <tr><td class="sig">w.parent</td>       <td class="ret">QtObj</td><td class="desc">Родительский объект. <code>isNull</code> для top-level.</td></tr>
+    <tr><td class="sig">w.childCount</td>   <td class="ret">Num</td>  <td class="desc">Количество дочерних объектов.</td></tr>
+    <tr><td class="sig">w.childAt(n)</td>   <td class="ret">QtObj</td><td class="desc">Дочерний объект по индексу.</td></tr>
+    <tr><td class="sig">w.children</td>     <td class="ret">List[QtObj]</td><td class="desc">Все дочерние объекты.</td></tr>
+  </table>
+
+  <pre><span class="cm">// Рекурсивный обход дерева виджетов</span>
+<span class="kw">var</span> indent = <span class="str">""</span>
+
+<span class="kw">var</span> printTree = <span class="cls">Fn</span>.<span class="fn">new</span> {|w, depth|
+    <span class="kw">var</span> pad = <span class="str">"  "</span> * depth
+    <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"%(pad)%(w.className)(%(w.name))"</span>)
+    <span class="kw">var</span> i = <span class="num">0</span>
+    <span class="kw">while</span> (i &lt; w.childCount) {
+        <span class="cm">// Wren не поддерживает рекурсию через Fn — разворачиваем вручную</span>
+        <span class="kw">var</span> c = w.<span class="fn">childAt</span>(i)
+        <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"%(pad)  %(c.className)(%(c.name))"</span>)
+        i = i + <span class="num">1</span>
+    }
+}
+
+<span class="cls">Inspector</span>.topWidgets.<span class="fn">each</span> {|w| printTree.<span class="fn">call</span>(w, <span class="num">0</span>) }</pre>
+  </section>
+
+  <section id="qtobj-dump">
+  <h3>Дамп памяти и разыменование</h3>
+  <table>
+    <tr><th>Метод</th><th>Описание</th></tr>
+    <tr><td class="sig">w.hexDump</td>        <td class="desc">Hex dump первых 128 байт объекта → Console.</td></tr>
+    <tr><td class="sig">w.hexDump(n)</td>      <td class="desc">Hex dump n байт объекта → Console.</td></tr>
+    <tr><td class="sig">w.hexDumpStr</td>      <td class="desc">Hex dump 128 байт → String (для обработки).</td></tr>
+    <tr><td class="sig">w.hexDumpStr(n)</td>   <td class="desc">Hex dump n байт → String.</td></tr>
+    <tr><td class="sig">w.derefPtr</td>        <td class="desc"><code>readPtr(w.address)</code> — читает указатель по адресу объекта (обычно vtable).</td></tr>
+    <tr><td class="sig">w.deref</td>           <td class="desc"><code>atAddress(readPtr(w.address))</code> — разыменовать как QtObj.</td></tr>
+  </table>
+
+  <pre><span class="cm">// Hex dump 64 байт объекта</span>
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"mainWin"</span>)
+w.<span class="fn">hexDump</span>(<span class="num">64</span>)
+
+<span class="cm">// Получить vtable pointer</span>
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"vtable = 0x%(w.derefPtr)"</span>)
+
+<span class="cm">// Сравнить hex dump как строку</span>
+<span class="kw">var</span> row = w.<span class="fn">hexDumpStr</span>(<span class="num">16</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(row)   <span class="cm">// "0000  xx xx xx xx ...  |....|"</span></pre>
+  </section>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── LOG -->
+<section id="log">
+  <h2>Класс Log — вывод в Monitor (левая панель)</h2>
+  <p>Используется из D-кода для логирования в Monitor-панель инспектора.</p>
+  <table>
+    <tr><th>Метод</th><th>Цвет</th><th>Описание</th></tr>
+    <tr><td class="sig">Log.print(msg)</td>  <td>синий</td>   <td class="desc">Обычный текст.</td></tr>
+    <tr><td class="sig">Log.info(msg)</td>   <td>голубой</td> <td class="desc">Информационное сообщение. Префикс <code>[INFO ]</code>.</td></tr>
+    <tr><td class="sig">Log.ok(msg)</td>     <td>зелёный</td> <td class="desc">Успех. Префикс <code>[OK   ]</code>.</td></tr>
+    <tr><td class="sig">Log.warn(msg)</td>   <td>жёлтый</td>  <td class="desc">Предупреждение. Префикс <code>[WARN ]</code>.</td></tr>
+    <tr><td class="sig">Log.error(msg)</td>  <td>красный</td> <td class="desc">Ошибка. Префикс <code>[ERROR]</code>.</td></tr>
+    <tr><td class="sig">Log.val(label, v)</td><td>циан</td>   <td class="desc">Значение переменной. Префикс <code>[VAL  ]</code>.</td></tr>
+    <tr><td class="sig">Log.sep(text)</td>   <td>серый</td>   <td class="desc">Разделитель с текстом: <code>─── text ───</code>.</td></tr>
+    <tr><td class="sig">Log.clear()</td>     <td>—</td>       <td class="desc">Очистить Monitor.</td></tr>
+  </table>
+
+  <pre><span class="cm">// Из Wren REPL:</span>
+<span class="cls">Log</span>.<span class="fn">sep</span>(<span class="str">"App startup"</span>)
+<span class="cls">Log</span>.<span class="fn">info</span>(<span class="str">"Version 1.0"</span>)
+<span class="cls">Log</span>.<span class="fn">val</span>(<span class="str">"widgets"</span>, <span class="cls">Inspector</span>.allWidgets.count)
+
+<span class="cm">// Из D-кода:</span>
+<span class="cm">// vm.interpret("log_main", "Log.ok(\"File saved\")"); </span></pre>
+</section>
+
+<!-- ─────────────────────────────── OUT -->
+<section id="out">
+  <h2>Класс Out — вывод в Console (правая панель)</h2>
+  <p>Используется в скриптах и REPL для вывода результатов.</p>
+  <table>
+    <tr><th>Метод</th><th>Цвет</th><th>Описание</th></tr>
+    <tr><td class="sig">Out.print(msg)</td>  <td>тёмно-синий</td><td class="desc">Обычный текст.</td></tr>
+    <tr><td class="sig">Out.info(msg)</td>   <td>голубой</td>    <td class="desc">Информация. Префикс <code>[INFO ]</code>.</td></tr>
+    <tr><td class="sig">Out.ok(msg)</td>     <td>зелёный</td>    <td class="desc">Успех. Префикс <code>[OK   ]</code>.</td></tr>
+    <tr><td class="sig">Out.warn(msg)</td>   <td>жёлтый</td>     <td class="desc">Предупреждение. Префикс <code>[WARN ]</code>.</td></tr>
+    <tr><td class="sig">Out.error(msg)</td>  <td>красный</td>    <td class="desc">Ошибка. Префикс <code>[ERROR]</code>.</td></tr>
+    <tr><td class="sig">Out.val(label, v)</td><td>циан</td>      <td class="desc">Метка + значение.</td></tr>
+    <tr><td class="sig">Out.sep(text)</td>   <td>серый</td>      <td class="desc">Разделитель.</td></tr>
+    <tr><td class="sig">Out.clear()</td>     <td>—</td>          <td class="desc">Очистить Console.</td></tr>
+  </table>
+
+  <pre><span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"Widget inspection"</span>)
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"table"</span>)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"class"</span>, w.className)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"children"</span>, w.childCount)
+<span class="cls">Out</span>.<span class="fn">ok</span>(<span class="str">"Done"</span>)</pre>
+</section>
+
+<!-- ─────────────────────────────── CHECK -->
+<section id="check">
+  <h2>Класс Check — утверждения / тесты</h2>
+  <table>
+    <tr><th>Метод</th><th>Описание</th></tr>
+    <tr><td class="sig">Check.that(cond, msg)</td>    <td class="desc">Проверить булево условие. OK = зелёный, FAIL = красный.</td></tr>
+    <tr><td class="sig">Check.equal(a, b, msg)</td>   <td class="desc">Сравнить строковые представления. Показывает diff при ошибке.</td></tr>
+    <tr><td class="sig">Check.notNull(val, msg)</td>  <td class="desc">Проверить что значение != 0 / не null.</td></tr>
+    <tr><td class="sig">Check.range(v,lo,hi,msg)</td> <td class="desc">Проверить что <code>lo &lt;= v &lt;= hi</code>.</td></tr>
+    <tr><td class="sig">Check.contains(s,sub,msg)</td><td class="desc">Проверить что строка <code>s</code> содержит <code>sub</code>.</td></tr>
+    <tr><td class="sig">Check.report()</td>           <td class="desc">Вывести итог: <code>N passed, M failed</code>.</td></tr>
+    <tr><td class="sig">Check.reset()</td>            <td class="desc">Сбросить счётчики.</td></tr>
+    <tr><td class="sig">Check.passed</td>             <td class="desc">Число прошедших проверок (Num).</td></tr>
+    <tr><td class="sig">Check.failed</td>             <td class="desc">Число упавших проверок (Num).</td></tr>
+  </table>
+
+  <pre><span class="cls">Check</span>.<span class="fn">reset</span>()
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"myBtn"</span>)
+<span class="cls">Check</span>.<span class="fn">that</span>(!w.isNull,             <span class="str">"widget exists"</span>)
+<span class="cls">Check</span>.<span class="fn">equal</span>(w.className, <span class="str">"QPushButton"</span>, <span class="str">"class is button"</span>)
+<span class="cls">Check</span>.<span class="fn">notNull</span>(w.address,          <span class="str">"address not zero"</span>)
+<span class="cls">Check</span>.<span class="fn">range</span>(w.childCount, <span class="num">0</span>, <span class="num">100</span>, <span class="str">"childCount reasonable"</span>)
+<span class="cls">Check</span>.<span class="fn">report</span>()</pre>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── D INTEGRATION -->
+<section id="d-register">
+  <h2>Интеграция с D — registerPointer</h2>
+  <p>Самый простой способ передать данные из D в Wren Inspector.</p>
+  <pre><span class="kw">import</span> wren_vm;
+
+<span class="cm">// Примитивы</span>
+<span class="kw">int</span>    counter = <span class="num">0</span>;
+<span class="kw">float</span>  price   = <span class="num">3.14f</span>;
+<span class="kw">double</span> total   = <span class="num">100.0</span>;
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"counter"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;counter);
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"price"</span>,   <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;price);
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"total"</span>,   <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;total);
+
+<span class="cm">// C-строка</span>
+<span class="kw">const char</span>* msg = <span class="str">"Hello"</span>;
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"msg"</span>,     <span class="kw">cast</span>(<span class="kw">void*</span>)msg);
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"msg_ptr"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;msg);
+
+<span class="cm">// Структура</span>
+<span class="kw">struct</span> Node { <span class="kw">int</span> value; <span class="kw">float</span> weight; Node* next; }
+Node root = {<span class="num">42</span>, <span class="num">1.5f</span>, <span class="kw">null</span>};
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"root"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;root);
+
+<span class="cm">// Qt-виджет</span>
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"mainWin"</span>, mainWin.<span class="fn">getWH</span>());</pre>
+</section>
+
+<section id="d-interpret">
+  <h2>Интеграция с D — вызов Wren из D</h2>
+  <pre><span class="kw">import</span> std.conv : to;
+
+<span class="cm">// Передать адрес переменной прямо в код</span>
+<span class="kw">int</span> x = <span class="num">777</span>;
+<span class="kw">size_t</span> addr = <span class="kw">cast</span>(<span class="kw">size_t</span>)&amp;x;
+vm.<span class="fn">interpret</span>(<span class="str">"dbg"</span>,
+    <span class="str">"Out.print(Inspector.readI32("</span> ~ to!string(addr) ~ <span class="str">"))"</span>);
+
+<span class="cm">// Вызвать сценарий программно</span>
+vm.<span class="fn">loadFile</span>(<span class="str">"./wren/scenarios/my_check.wren"</span>, <span class="str">"check_run"</span>);
+
+<span class="cm">// Утилита для вывода любого адреса</span>
+<span class="kw">void</span> <span class="fn">inspectAt</span>(T)(ref T var, <span class="kw">int</span> bytes = T.sizeof * <span class="num">4</span>) {
+    <span class="kw">size_t</span> a = <span class="kw">cast</span>(<span class="kw">size_t</span>)(&amp;var);
+    vm.<span class="fn">interpret</span>(<span class="str">"insp_"</span> ~ to!string(a),
+        <span class="str">"Inspector.hexDump("</span> ~ to!string(a) ~ <span class="str">","</span> ~ to!string(bytes) ~ <span class="str">")"</span>);
+}</pre>
+</section>
+
+<section id="d-logfrom">
+  <h2>Логирование из D в Monitor</h2>
+  <pre><span class="cm">// Импортировать Log один раз в модуле "main":</span>
+vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`import "log" for Log`</span>);
+
+<span class="cm">// Затем использовать:</span>
+vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`Log.ok("File saved")`</span>);
+vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`Log.val("rows", "</span> ~ to!string(rows) ~ <span class="str">`")`</span>);
+vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`Log.sep("─────")`</span>);
+
+<span class="cm">// Обёртка для удобства:</span>
+<span class="kw">void</span> <span class="fn">logOk</span>(string msg) {
+    vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`Log.ok("`</span> ~ msg ~ <span class="str">`")`</span>);
+}
+<span class="kw">void</span> <span class="fn">logVal</span>(string label, string val) {
+    vm.<span class="fn">interpret</span>(<span class="str">"main"</span>, <span class="str">`Log.val("`</span> ~ label ~ <span class="str">`","`</span> ~ val ~ <span class="str">`")`</span>);
+}</pre>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── EXAMPLES -->
+<section id="ex-list">
+  <h2>Пример: обход связанного списка</h2>
+  <h4>Структура в D:</h4>
+  <pre><span class="kw">struct</span> Node {
+    <span class="kw">int</span>   value;   <span class="cm">// offset 0, 4 bytes</span>
+    <span class="kw">float</span> weight;  <span class="cm">// offset 4, 4 bytes</span>
+    Node* next;    <span class="cm">// offset 8, 4 bytes (32-bit)</span>
+}
+Node* head = ...;
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"head"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)head);</pre>
+
+  <h4>Скрипт Wren:</h4>
+  <pre><span class="kw">var</span> VALUE  = <span class="num">0</span>   <span class="cm">// offset int value</span>
+<span class="kw">var</span> WEIGHT = <span class="num">4</span>   <span class="cm">// offset float weight</span>
+<span class="kw">var</span> NEXT   = <span class="num">8</span>   <span class="cm">// offset Node* next</span>
+
+<span class="kw">var</span> ptr = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"head"</span>)
+<span class="kw">var</span> i   = <span class="num">0</span>
+
+<span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"Linked list"</span>)
+<span class="kw">while</span> (ptr <span class="op">!=</span> <span class="num">0</span>) {
+    <span class="kw">var</span> val = <span class="cls">Inspector</span>.<span class="fn">readI32</span>(ptr + VALUE)
+    <span class="kw">var</span> w   = <span class="cls">Inspector</span>.<span class="fn">readF32</span>(ptr + WEIGHT)
+    <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"[%(i)]  @0x%(ptr)  value=%(val)  weight=%(w)"</span>)
+    ptr = <span class="cls">Inspector</span>.<span class="fn">readPtr</span>(ptr + NEXT)
+    i = i + <span class="num">1</span>
+    <span class="kw">if</span> (i > <span class="num">10000</span>) { <span class="cls">Out</span>.<span class="fn">warn</span>(<span class="str">"Limit exceeded — possible cycle!"</span>); <span class="kw">break</span> }
+}
+<span class="cls">Out</span>.<span class="fn">ok</span>(<span class="str">"Total nodes: %(i)"</span>)</pre>
+</section>
+
+<section id="ex-struct">
+  <h2>Пример: просмотр структуры</h2>
+  <h4>Структура в D:</h4>
+  <pre><span class="kw">struct</span> PlayerState {
+    <span class="kw">int</span>    hp;       <span class="cm">// +0</span>
+    <span class="kw">int</span>    maxHp;    <span class="cm">// +4</span>
+    <span class="kw">float</span>  x, y;    <span class="cm">// +8, +12</span>
+    <span class="kw">int</span>    level;    <span class="cm">// +16</span>
+    <span class="kw">char*</span>  name;     <span class="cm">// +20</span>
+}
+PlayerState player;
+<span class="cls">WrenVM</span>.<span class="fn">registerPointer</span>(<span class="str">"player"</span>, <span class="kw">cast</span>(<span class="kw">void*</span>)&amp;player);</pre>
+
+  <h4>Скрипт Wren:</h4>
+  <pre><span class="kw">var</span> a = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"player"</span>)
+<span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"PlayerState"</span>)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"hp"</span>,    <span class="cls">Inspector</span>.<span class="fn">readI32</span>(a +  <span class="num">0</span>))
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"maxHp"</span>, <span class="cls">Inspector</span>.<span class="fn">readI32</span>(a +  <span class="num">4</span>))
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"x"</span>,     <span class="cls">Inspector</span>.<span class="fn">readF32</span>(a +  <span class="num">8</span>))
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"y"</span>,     <span class="cls">Inspector</span>.<span class="fn">readF32</span>(a + <span class="num">12</span>))
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"level"</span>, <span class="cls">Inspector</span>.<span class="fn">readI32</span>(a + <span class="num">16</span>))
+<span class="cm">// name — указатель на C-строку</span>
+<span class="kw">var</span> namePtr = <span class="cls">Inspector</span>.<span class="fn">readPtr</span>(a + <span class="num">20</span>)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"name@"</span>, <span class="str">"0x%(namePtr)"</span>)
+<span class="cm">// Первые байты строки</span>
+<span class="cls">Inspector</span>.<span class="fn">hexDump</span>(namePtr, <span class="num">16</span>)</pre>
+</section>
+
+<section id="ex-chain">
+  <h2>Пример: цепочка указателей (vtable)</h2>
+  <pre><span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"mainWin"</span>)
+<span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"vptr chain"</span>)
+
+<span class="cm">// Уровень 0: сам объект</span>
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"obj"</span>,    <span class="str">"0x%(w.address)"</span>)
+
+<span class="cm">// Уровень 1: vtable pointer (первые 4/8 байт объекта)</span>
+<span class="kw">var</span> vtbl = <span class="cls">Inspector</span>.<span class="fn">readPtr</span>(w.address)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"vtable"</span>, <span class="str">"0x%(vtbl)"</span>)
+<span class="cls">Inspector</span>.<span class="fn">hexDump</span>(vtbl, <span class="num">32</span>)  <span class="cm">// первые 8 виртуальных функций</span>
+
+<span class="cm">// Уровень 2: первый метод в vtable</span>
+<span class="kw">var</span> fn0 = <span class="cls">Inspector</span>.<span class="fn">readPtr</span>(vtbl)
+<span class="cls">Out</span>.<span class="fn">val</span>(<span class="str">"vfunc[0]"</span>, <span class="str">"0x%(fn0)"</span>)</pre>
+</section>
+
+<section id="ex-hex">
+  <h2>Пример: hex dump и анализ</h2>
+  <pre><span class="cm">// Дамп любого виджета</span>
+<span class="kw">var</span> w = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"myWidget"</span>)
+w.<span class="fn">hexDump</span>(<span class="num">128</span>)
+
+<span class="cm">// Дамп по числовому адресу</span>
+<span class="cls">Inspector</span>.<span class="fn">hexDump</span>(<span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"buffer"</span>), <span class="num">256</span>)
+
+<span class="cm">// Программный анализ hex dump</span>
+<span class="kw">var</span> rows = w.<span class="fn">hexDumpStr</span>(<span class="num">64</span>).<span class="fn">split</span>(<span class="str">"\n"</span>)
+<span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"Rows: %(rows.count)"</span>)    <span class="cm">// 4</span>
+<span class="cls">Out</span>.<span class="fn">print</span>(rows[<span class="num">0</span>])                 <span class="cm">// "0000  xx xx ..."</span>
+
+<span class="cm">// Найти ненулевые байты в первых 16</span>
+<span class="kw">var</span> a = <span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"buffer"</span>)
+<span class="kw">var</span> i = <span class="num">0</span>
+<span class="kw">while</span> (i &lt; <span class="num">16</span>) {
+    <span class="kw">var</span> b = <span class="cls">Inspector</span>.<span class="fn">readU8</span>(a + i)
+    <span class="kw">if</span> (b <span class="op">!=</span> <span class="num">0</span>) <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"[%(i)] = %(b)"</span>)
+    i = i + <span class="num">1</span>
+}</pre>
+</section>
+
+<section id="ex-find">
+  <h2>Пример: поиск и инспекция виджетов</h2>
+  <pre><span class="cm">// Найти все QLabel и показать их тексты</span>
+<span class="cls">Inspector</span>.<span class="fn">findByClass</span>(<span class="str">"QLabel"</span>).<span class="fn">each</span> {|lbl|
+    <span class="kw">var</span> txt = lbl.<span class="fn">property</span>(<span class="str">"text"</span>)
+    <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"%(lbl.name): %(txt)"</span>)
+}
+
+<span class="cm">// Дерево от корневого окна</span>
+<span class="kw">var</span> top = <span class="cls">Inspector</span>.topWidgets[<span class="num">0</span>]
+<span class="kw">var</span> depth = <span class="num">0</span>
+<span class="kw">var</span> stack = [top]
+<span class="kw">while</span> (stack.count > <span class="num">0</span>) {
+    <span class="kw">var</span> w   = stack[<span class="num">0</span>]
+    stack.<span class="fn">removeAt</span>(<span class="num">0</span>)
+    <span class="cls">Out</span>.<span class="fn">print</span>(<span class="str">"%(w.className)(%(w.name))"</span>)
+    w.children.<span class="fn">each</span> {|c| stack.<span class="fn">add</span>(c) }
+}
+
+<span class="cm">// Посчитать виджеты по классам</span>
+<span class="kw">var</span> classes = [<span class="str">"QPushButton"</span>, <span class="str">"QLabel"</span>, <span class="str">"QLineEdit"</span>, <span class="str">"QComboBox"</span>]
+classes.<span class="fn">each</span> {|cls|
+    <span class="kw">var</span> n = <span class="cls">Inspector</span>.<span class="fn">findByClass</span>(cls).count
+    <span class="cls">Out</span>.<span class="fn">val</span>(cls, n)
+}</pre>
+</section>
+
+<section id="ex-check">
+  <h2>Пример: тестирование GUI (Check)</h2>
+  <pre><span class="cls">Check</span>.<span class="fn">reset</span>()
+<span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"UI sanity checks"</span>)
+
+<span class="cm">// Виджеты существуют</span>
+<span class="kw">var</span> btn  = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"saveBtn"</span>)
+<span class="kw">var</span> edit = <span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"nameEdit"</span>)
+<span class="cls">Check</span>.<span class="fn">that</span>(!btn.isNull,  <span class="str">"saveBtn exists"</span>)
+<span class="cls">Check</span>.<span class="fn">that</span>(!edit.isNull, <span class="str">"nameEdit exists"</span>)
+
+<span class="cm">// Правильные классы</span>
+<span class="cls">Check</span>.<span class="fn">equal</span>(btn.className,  <span class="str">"QPushButton"</span>, <span class="str">"saveBtn is QPushButton"</span>)
+<span class="cls">Check</span>.<span class="fn">equal</span>(edit.className, <span class="str">"QLineEdit"</span>,   <span class="str">"nameEdit is QLineEdit"</span>)
+
+<span class="cm">// Виджет виден</span>
+<span class="cls">Check</span>.<span class="fn">equal</span>(btn.<span class="fn">property</span>(<span class="str">"visible"</span>), <span class="str">"true"</span>, <span class="str">"saveBtn visible"</span>)
+
+<span class="cm">// Минимальное количество виджетов</span>
+<span class="cls">Check</span>.<span class="fn">range</span>(<span class="cls">Inspector</span>.allWidgets.count, <span class="num">3</span>, <span class="num">1000</span>, <span class="str">"widget count 3..1000"</span>)
+
+<span class="cls">Check</span>.<span class="fn">report</span>()</pre>
+</section>
+
+<hr>
+
+<!-- ─────────────────────────────── SCENARIOS -->
+<section id="scenarios">
+  <h2>Сценарии — файлы .wren</h2>
+  <p>Сценарии — это <code>.wren</code>-файлы в директории <code>wren/scenarios/</code>. Загружаются через
+  выпадающий список Scenario + кнопку <strong>Load</strong>. Каждая загрузка создаёт уникальный модуль.</p>
+
+  <div class="note">В сценариях необходимо явно писать <code>import</code> — PREAMBLE не добавляется автоматически.</div>
+
+  <h3>Шаблон сценария</h3>
+  <pre><span class="cm">// wren/scenarios/my_scenario.wren</span>
+<span class="kw">import</span> <span class="str">"out"</span>       <span class="kw">for</span> <span class="cls">Out</span>
+<span class="kw">import</span> <span class="str">"log"</span>       <span class="kw">for</span> <span class="cls">Log</span>
+<span class="kw">import</span> <span class="str">"check"</span>     <span class="kw">for</span> <span class="cls">Check</span>
+<span class="kw">import</span> <span class="str">"inspector"</span> <span class="kw">for</span> <span class="cls">Inspector</span>, <span class="cls">QtObj</span>
+
+<span class="cls">Out</span>.<span class="fn">sep</span>(<span class="str">"My Scenario"</span>)
+<span class="cm">// ... ваш код ...</span>
+<span class="cls">Out</span>.<span class="fn">ok</span>(<span class="str">"Done"</span>)</pre>
+
+  <h3>Готовые сценарии</h3>
+  <table>
+    <tr><th>Файл</th><th>Описание</th></tr>
+    <tr><td><code>widget_report.wren</code></td>     <td>Дерево всех виджетов приложения.</td></tr>
+    <tr><td><code>check_inspector.wren</code></td>   <td>Самотестирование API Inspector через Check.*.</td></tr>
+    <tr><td><code>find_and_inspect.wren</code></td>  <td>Найти виджет по имени, показать все свойства.</td></tr>
+    <tr><td><code>count_by_class.wren</code></td>    <td>Статистика: сколько виджетов каждого класса.</td></tr>
+    <tr><td><code>dump_widget.wren</code></td>        <td>dump + propertyNames + цепочка parent.</td></tr>
+    <tr><td><code>address_chain.wren</code></td>     <td>Адреса дочерних виджетов, atAddress, parent chain.</td></tr>
+    <tr><td><code>hex_dump.wren</code></td>           <td>w.hexDump и Inspector.hexDump(addr, n).</td></tr>
+  </table>
+
+  <h3>Создание нового сценария</h3>
+  <ol style="margin:8px 0 0 20px; color:var(--text); line-height:2;">
+    <li>Создайте файл <code>wren/scenarios/my_name.wren</code></li>
+    <li>Добавьте импорты в начало</li>
+    <li>Перезапустите приложение (или перезагрузите список)</li>
+    <li>Выберите из выпадающего списка → Load</li>
+  </ol>
+</section>
+
+<hr>
+
+<section>
+  <h2>Быстрая шпаргалка</h2>
+  <pre><span class="cm">─── Поиск ───────────────────────────────────────────────</span>
+<span class="cls">Inspector</span>.<span class="fn">find</span>(<span class="str">"name"</span>)              <span class="cm">// по objectName → QtObj</span>
+<span class="cls">Inspector</span>.<span class="fn">findByClass</span>(<span class="str">"QLabel"</span>)    <span class="cm">// по классу   → List[QtObj]</span>
+<span class="cls">Inspector</span>.allWidgets                <span class="cm">// все виджеты → List[QtObj]</span>
+<span class="cls">Inspector</span>.topWidgets                <span class="cm">// toplevel    → List[QtObj]</span>
+<span class="cls">Inspector</span>.<span class="fn">atAddress</span>(n)             <span class="cm">// по адресу   → QtObj</span>
+
+<span class="cm">─── Виджет ──────────────────────────────────────────────</span>
+w.name  w.className  w.address  w.isNull  w.toString
+w.parent  w.children  w.childCount  w.<span class="fn">childAt</span>(n)
+w.<span class="fn">property</span>(key)  w.<span class="fn">setProperty</span>(key,val)  w.<span class="fn">invoke</span>(method)
+w.propertyNames  w.methods  w.signals  w.slots  w.dump
+
+<span class="cm">─── Память ──────────────────────────────────────────────</span>
+<span class="cls">Inspector</span>.<span class="fn">readU8</span>/U16/U32/U64(addr)
+<span class="cls">Inspector</span>.<span class="fn">readI8</span>/I16/I32/I64(addr)
+<span class="cls">Inspector</span>.<span class="fn">readF32</span>/F64/Ptr(addr)
+<span class="cls">Inspector</span>.<span class="fn">hexDump</span>(addr[, n])
+w.<span class="fn">hexDump</span>([n])  w.<span class="fn">hexDumpStr</span>([n])
+w.derefPtr  w.deref
+
+<span class="cm">─── Named Pointers ──────────────────────────────────────</span>
+<span class="cls">Inspector</span>.<span class="fn">namedPtr</span>(<span class="str">"x"</span>)            <span class="cm">// → Num (адрес)</span>
+<span class="cls">Inspector</span>.<span class="fn">namedQtObj</span>(<span class="str">"win"</span>)       <span class="cm">// → QtObj</span>
+<span class="cls">Inspector</span>.pointerNames             <span class="cm">// → List[String]</span>
+
+<span class="cm">─── Вывод ───────────────────────────────────────────────</span>
+<span class="cls">Out</span>.<span class="fn">print</span>/info/ok/warn/error(msg)   <span class="cm">// Console (правая)</span>
+<span class="cls">Log</span>.<span class="fn">print</span>/info/ok/warn/error(msg)   <span class="cm">// Monitor (левая)</span>
+<span class="cls">Out</span>.<span class="fn">val</span>(label, value)              <span class="cm">// метка = значение</span>
+<span class="cls">Out</span>.<span class="fn">sep</span>(text)  <span class="cls">Out</span>.clear()
+
+<span class="cm">─── Тесты ───────────────────────────────────────────────</span>
+<span class="cls">Check</span>.<span class="fn">that</span>(cond, msg)   <span class="cls">Check</span>.<span class="fn">equal</span>(a,b,msg)
+<span class="cls">Check</span>.<span class="fn">range</span>(v,lo,hi,msg)  <span class="cls">Check</span>.<span class="fn">notNull</span>(v,msg)
+<span class="cls">Check</span>.<span class="fn">report</span>()  <span class="cls">Check</span>.<span class="fn">reset</span>()</pre>
+</section>
+
+<div style="margin-top:48px; padding:16px; color:var(--muted); font-size:12px; border-top:1px solid var(--border);">
+  Wren Inspector · qte56 project · Qt 5.13 + D + Wren
+</div>
+
+</div><!-- /content -->
+
+<script>
+// Highlight active TOC link on scroll
+const links = document.querySelectorAll('#sidebar a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector('#sidebar a[href="#' + e.target.id + '"]');
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
