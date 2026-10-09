@@ -1,0 +1,15 @@
+LIBRARY cbtest
+EXPORTS
+    cbw0
+    cbw1
+    cbw2
+    cbw3
+    cbw4
+    cbw8
+    cbc0
+    cbc1
+    cbc2
+    cbc4
+    cbw2_chk
+    cb_esp_diff
+    cbw2_loop
