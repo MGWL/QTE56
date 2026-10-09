@@ -7,3 +7,24 @@ Desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Сборка C++/Qt
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.lib
+*.stash
+Makefile
+Makefile.Debug
+Makefile.Release
+object_script.*
+Release/
+Debug/
+
+# Прочий мусор
+nul_
+*.zip
+*копия*
